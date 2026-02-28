@@ -99,7 +99,14 @@ body {
   color: var(--text-bright);
 }
 .nav-link.active { border-right: 3px solid var(--accent); }
-.nav-link .icon { font-size: 15px; width: 18px; text-align: center; }
+.nav-link .icon { 
+  font-size: 15px; 
+  width: 18px; 
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ── Main Content ── */
 #main {
@@ -333,7 +340,12 @@ tbody td { padding: 10px 12px; color: var(--text); }
   padding: 60px 20px;
   color: var(--text-muted);
 }
-.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state .icon { 
+  font-size: 40px; 
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
 .empty-state p { font-size: 14px; }
 
 /* ── Report viewer ── */

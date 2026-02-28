@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="top-bar">
-  <h2>🔍 Vulnerabilities</h2>
+  <h2><i class="bi bi-bug"></i> Vulnerabilities</h2>
   <div class="actions">
-    <button class="btn btn-primary" onclick="openModal('vuln-modal')">+ New Vulnerability</button>
+    <button class="btn btn-primary" onclick="openModal('vuln-modal')"><i class="bi bi-plus-lg"></i> New Vulnerability</button>
   </div>
 </div>
 
@@ -36,7 +36,7 @@
 <!-- Modal -->
 <div class="modal-overlay" id="vuln-modal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('vuln-modal')">✕</button>
+    <button class="modal-close" onclick="closeModal('vuln-modal')"><i class="bi bi-x-lg"></i></button>
     <h3 id="vuln-modal-title">New Vulnerability</h3>
     <div class="form-row">
       <div class="form-group"><label>Title *</label><input id="v-title" /></div>
@@ -82,7 +82,7 @@ async function loadVulns() {
   const vulns = await API.get(url);
   const tbody = document.getElementById("vulns-tbody");
   if (!vulns.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🔍</div><p>No vulnerabilities recorded yet.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon"><i class="bi bi-bug" style="font-size:48px"></i></div><p>No vulnerabilities recorded yet.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = vulns.map(v => `

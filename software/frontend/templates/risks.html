@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="top-bar">
-  <h2>⚠️ Risk Register</h2>
+  <h2><i class="bi bi-exclamation-diamond"></i> Risk Register</h2>
   <div class="actions">
-    <button class="btn btn-primary" onclick="openModal('risk-modal')">+ New Risk</button>
+    <button class="btn btn-primary" onclick="openModal('risk-modal')"><i class="bi bi-plus-lg"></i> New Risk</button>
   </div>
 </div>
 
@@ -41,7 +41,7 @@
 <!-- Risk Modal -->
 <div class="modal-overlay" id="risk-modal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('risk-modal')">✕</button>
+    <button class="modal-close" onclick="closeModal('risk-modal')"><i class="bi bi-x-lg"></i></button>
     <h3 id="risk-modal-title">New Risk Entry</h3>
 
     <div class="form-row">
@@ -93,7 +93,7 @@ async function loadRisks() {
   const risks = await API.get(url);
   const tbody = document.getElementById("risks-tbody");
   if (!risks.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">⚠️</div><p>No risks recorded yet.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon"><i class="bi bi-exclamation-diamond" style="font-size:48px"></i></div><p>No risks recorded yet.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = risks.map(r => `

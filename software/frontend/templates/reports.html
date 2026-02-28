@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="top-bar">
-  <h2>📄 Reports</h2>
+  <h2><i class="bi bi-file-earmark-text"></i> Reports</h2>
   <div class="actions">
-    <button class="btn btn-ghost" onclick="generateReport('Executive')">⚡ Generate Executive</button>
-    <button class="btn btn-primary" onclick="generateReport('Technical')">⚡ Generate Technical</button>
+    <button class="btn btn-ghost" onclick="generateReport('Executive')"><i class="bi bi-lightning-fill"></i> Generate Executive</button>
+    <button class="btn btn-primary" onclick="generateReport('Technical')"><i class="bi bi-lightning-fill"></i> Generate Technical</button>
   </div>
 </div>
 
@@ -32,7 +32,7 @@
         </div>
         <div id="report-viewer" class="report-content" style="flex:1">
           <div class="empty-state">
-            <div class="icon">📄</div>
+            <div class="icon"><i class="bi bi-file-earmark-text" style="font-size:48px"></i></div>
             <p>Select a report from the list, or generate a new one.</p>
           </div>
         </div>
@@ -85,7 +85,7 @@ async function generateReport(type) {
   btn.textContent = "Generating…";
   const result = await API.post("/api/reports/generate", { report_type: type });
   btn.disabled = false;
-  btn.textContent = type === "Executive" ? "⚡ Generate Executive" : "⚡ Generate Technical";
+  btn.innerHTML = type === "Executive" ? `<i class="bi bi-lightning-fill"></i> Generate Executive` : `<i class="bi bi-lightning-fill"></i> Generate Technical`;
   if (result.error) return showAlert(result.error, "error");
   showAlert(`${type} report generated successfully.`);
   await loadReports();
@@ -98,7 +98,7 @@ async function deleteCurrentReport() {
   currentReportId = null;
   document.getElementById("report-viewer-title").textContent = "Select a report to view";
   document.getElementById("delete-report-btn").style.display = "none";
-  document.getElementById("report-viewer").innerHTML = `<div class="empty-state"><div class="icon">📄</div><p>Select a report from the list.</p></div>`;
+  document.getElementById("report-viewer").innerHTML = `<div class="empty-state"><div class="icon"><i class="bi bi-file-earmark-text" style="font-size:48px"></i></div><p>Select a report from the list.</p></div>`;
   loadReports();
   showAlert("Report deleted.");
 }

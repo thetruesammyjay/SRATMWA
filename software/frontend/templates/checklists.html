@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="top-bar">
-  <h2>✅ Security Checklists</h2>
+  <h2><i class="bi bi-check2-square"></i> Security Checklists</h2>
   <div class="actions">
-    <button class="btn btn-ghost" onclick="loadProgress()">↻ Refresh Progress</button>
-    <button class="btn btn-primary" onclick="openModal('check-modal')">+ Add Item</button>
+    <button class="btn btn-ghost" onclick="loadProgress()"><i class="bi bi-arrow-clockwise"></i> Refresh Progress</button>
+    <button class="btn btn-primary" onclick="openModal('check-modal')"><i class="bi bi-plus-lg"></i> Add Item</button>
   </div>
 </div>
 
@@ -21,10 +21,10 @@
       <div class="progress-fill" id="progress-fill" style="width:0%"></div>
     </div>
     <div style="display:flex;gap:20px;margin-top:10px;font-size:12px;color:var(--text-muted)">
-      <span>✅ Pass: <strong id="cnt-pass">0</strong></span>
-      <span>❌ Fail: <strong id="cnt-fail">0</strong></span>
-      <span>➖ N/A: <strong id="cnt-na">0</strong></span>
-      <span>❓ Not Checked: <strong id="cnt-nc">0</strong></span>
+      <span><i class="bi bi-check-circle-fill" style="color:var(--success)"></i> Pass: <strong id="cnt-pass">0</strong></span>
+      <span><i class="bi bi-x-circle-fill" style="color:var(--danger)"></i> Fail: <strong id="cnt-fail">0</strong></span>
+      <span><i class="bi bi-dash-circle-fill" style="color:var(--text-muted)"></i> N/A: <strong id="cnt-na">0</strong></span>
+      <span><i class="bi bi-question-circle-fill" style="color:var(--warning)"></i> Not Checked: <strong id="cnt-nc">0</strong></span>
     </div>
   </div>
 
@@ -56,7 +56,7 @@
 <!-- Modal -->
 <div class="modal-overlay" id="check-modal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('check-modal')">✕</button>
+    <button class="modal-close" onclick="closeModal('check-modal')"><i class="bi bi-x-lg"></i></button>
     <h3 id="check-modal-title">Add Checklist Item</h3>
     <div class="form-row">
       <div class="form-group"><label>Domain *</label><input id="ci-domain" placeholder="e.g. Authentication" /></div>
@@ -114,7 +114,7 @@ async function loadChecklist() {
   const items = await API.get(url);
   const tbody = document.getElementById("check-tbody");
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">✅</div><p>No checklist items found.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon"><i class="bi bi-check2-square" style="font-size:48px"></i></div><p>No checklist items found.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = items.map(i => `
