@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top-bar">
+  <h2>📊 Dashboard</h2>
+  <div class="actions">
+    <span style="font-size:12px;color:var(--text-muted);">Security Risk Assessment &amp; Threat Modeling</span>
+  </div>
+</div>
+
+<div class="page-content">
+  <div id="alert-container"></div>
+
+  <!-- Stats row -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card"><div class="stat-label">Assets</div><div class="stat-value" id="cnt-assets">—</div></div>
+    <div class="stat-card"><div class="stat-label">Threats</div><div class="stat-value" id="cnt-threats">—</div><div class="stat-sub" id="open-threats"></div></div>
+    <div class="stat-card"><div class="stat-label">Risks</div><div class="stat-value" id="cnt-risks">—</div><div class="stat-sub" id="open-risks"></div></div>
+    <div class="stat-card"><div class="stat-label">Vulnerabilities</div><div class="stat-value" id="cnt-vulns">—</div><div class="stat-sub" id="open-vulns"></div></div>
+    <div class="stat-card"><div class="stat-label">Controls</div><div class="stat-value" id="cnt-controls">—</div></div>
+    <div class="stat-card"><div class="stat-label">Checklist</div><div class="stat-value" id="check-pct">—</div><div class="stat-sub">completion</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+
+    <!-- Risk Level Breakdown -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Risk Level Breakdown</span></div>
+      <div id="risk-levels"></div>
+    </div>
+
+    <!-- STRIDE Breakdown -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">STRIDE Threat Categories</span></div>
+      <div id="stride-breakdown"></div>
+    </div>
+
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+    <!-- Vulnerability Severity -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Vulnerability Severity</span></div>
+      <div id="vuln-severity"></div>
+    </div>
+
+    <!-- Control Status -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Control Implementation Status</span></div>
+      <div id="ctrl-status"></div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadDashboard() {
+  const data = await API.get("/api/dashboard/summary");
+
+  document.getElementById("cnt-assets").textContent    = data.counts.assets;
+  document.getElementById("cnt-threats").textContent   = data.counts.threats;
+  document.getElementById("cnt-risks").textContent     = data.counts.risks;
+  document.getElementById("cnt-vulns").textContent     = data.counts.vulnerabilities;
+  document.getElementById("cnt-controls").textContent  = data.counts.controls;
+  document.getElementById("check-pct").textContent     = data.checklist_completion_pct + "%";
+  document.getElementById("open-threats").textContent  = data.open_threats + " open";
+  document.getElementById("open-risks").textContent    = data.open_risks + " open";
+  document.getElementById("open-vulns").textContent    = data.open_vulns + " open";
+
+  // Risk levels
+  const rl = data.risk_levels;
+  const rlColors = { Critical:"var(--critical)", High:"var(--warning)", Medium:"var(--accent)", Low:"var(--success)" };
+  document.getElementById("risk-levels").innerHTML = Object.entries(rl).map(([k,v]) =>
+    `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+       <div style="width:72px;font-size:12px;color:var(--text-muted)">${k}</div>
+       <div style="flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;">
+         <div style="height:100%;width:${Math.min(v*10,100)}%;background:${rlColors[k]};border-radius:5px;"></div>
+       </div>
+       <div style="width:24px;text-align:right;font-weight:700;color:var(--text-bright);font-size:13px">${v}</div>
+     </div>`
+  ).join("");
+
+  // STRIDE
+  const sb = data.stride_breakdown;
+  const total = Object.values(sb).reduce((a,b) => a+b, 0) || 1;
+  document.getElementById("stride-breakdown").innerHTML = Object.entries(sb).map(([k,v]) =>
+    `<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+       <div style="width:160px;font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k}</div>
+       <div style="flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;">
+         <div style="height:100%;width:${Math.round(v/total*100)}%;background:var(--accent);border-radius:5px;"></div>
+       </div>
+       <div style="width:24px;text-align:right;font-weight:700;color:var(--text-bright);font-size:13px">${v}</div>
+     </div>`
+  ).join("");
+
+  // Vuln severity
+  const vs = data.vulnerability_severity;
+  document.getElementById("vuln-severity").innerHTML = Object.entries(vs).length
+    ? Object.entries(vs).map(([k,v]) =>
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+           <span>${severityBadge(k)}</span><span style="font-weight:700">${v}</span>
+         </div>`
+      ).join("")
+    : `<p style="color:var(--text-muted);font-size:13px">No vulnerabilities recorded.</p>`;
+
+  // Control status
+  const cs = data.control_status;
+  document.getElementById("ctrl-status").innerHTML = Object.entries(cs).length
+    ? Object.entries(cs).map(([k,v]) =>
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+           <span style="font-size:13px">${k}</span><span style="font-weight:700">${v}</span>
+         </div>`
+      ).join("")
+    : `<p style="color:var(--text-muted);font-size:13px">No controls recorded.</p>`;
+}
+
+loadDashboard();
+</script>
+{% endblock %}

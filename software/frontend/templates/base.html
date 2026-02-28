@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SRATMWA — Security Risk Assessment & Threat Modeling</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-brand">
+      <h1>🛡 SRATMWA</h1>
+      <p>Threat Modeling Platform</p>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a class="nav-link" href="/"><span class="icon">📊</span> Dashboard</a>
+
+      <div class="nav-section-label">Analysis</div>
+      <a class="nav-link" href="/threats"><span class="icon">⚔️</span> Threat Models</a>
+      <a class="nav-link" href="/vulnerabilities"><span class="icon">🔍</span> Vulnerabilities</a>
+      <a class="nav-link" href="/risks"><span class="icon">⚠️</span> Risk Register</a>
+
+      <div class="nav-section-label">Controls</div>
+      <a class="nav-link" href="/controls"><span class="icon">🔒</span> Security Controls</a>
+      <a class="nav-link" href="/checklists"><span class="icon">✅</span> Checklists</a>
+
+      <div class="nav-section-label">Output</div>
+      <a class="nav-link" href="/reports"><span class="icon">📄</span> Reports</a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

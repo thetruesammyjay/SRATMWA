@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top-bar">
+  <h2>📄 Reports</h2>
+  <div class="actions">
+    <button class="btn btn-ghost" onclick="generateReport('Executive')">⚡ Generate Executive</button>
+    <button class="btn btn-primary" onclick="generateReport('Technical')">⚡ Generate Technical</button>
+  </div>
+</div>
+
+<div class="page-content">
+  <div id="alert-container"></div>
+
+  <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;height:calc(100vh - 130px)">
+
+    <!-- Reports list -->
+    <div>
+      <div class="card" style="height:100%;overflow-y:auto">
+        <div class="card-header"><span class="card-title">Saved Reports</span></div>
+        <div id="reports-list">
+          <p style="color:var(--text-muted);font-size:13px">Loading…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report viewer -->
+    <div>
+      <div class="card" style="height:100%;display:flex;flex-direction:column">
+        <div class="card-header">
+          <span class="card-title" id="report-viewer-title">Select a report to view</span>
+          <button class="btn btn-danger btn-sm" id="delete-report-btn" style="display:none" onclick="deleteCurrentReport()">Delete</button>
+        </div>
+        <div id="report-viewer" class="report-content" style="flex:1">
+          <div class="empty-state">
+            <div class="icon">📄</div>
+            <p>Select a report from the list, or generate a new one.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentReportId = null;
+
+async function loadReports() {
+  const reports = await API.get("/api/reports/");
+  const list = document.getElementById("reports-list");
+  if (!reports.length) {
+    list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">No reports yet.</p>`;
+    return;
+  }
+  list.innerHTML = reports.map(r => `
+    <div onclick="viewReport(${r.id})" id="report-item-${r.id}"
+      style="padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px;transition:background 0.15s"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"
+    >
+      <div style="font-size:13px;font-weight:600;color:var(--text-bright)">${r.title}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+        <span class="badge ${r.report_type === 'Executive' ? 'badge-high' : 'badge-info'}">${r.report_type}</span>
+        &nbsp;${r.created_at.slice(0,10)}
+      </div>
+    </div>`).join("");
+}
+
+async function viewReport(id) {
+  const r = await API.get(`/api/reports/${id}`);
+  currentReportId = id;
+  document.getElementById("report-viewer-title").textContent = r.title;
+  document.getElementById("delete-report-btn").style.display = "inline-flex";
+  // Render markdown-like content
+  document.getElementById("report-viewer").textContent = r.content;
+  document.querySelectorAll("[id^='report-item-']").forEach(el => el.style.borderLeft = "");
+  const active = document.getElementById(`report-item-${id}`);
+  if (active) active.style.borderLeft = "3px solid var(--accent)";
+}
+
+async function generateReport(type) {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = "Generating…";
+  const result = await API.post("/api/reports/generate", { report_type: type });
+  btn.disabled = false;
+  btn.textContent = type === "Executive" ? "⚡ Generate Executive" : "⚡ Generate Technical";
+  if (result.error) return showAlert(result.error, "error");
+  showAlert(`${type} report generated successfully.`);
+  await loadReports();
+  viewReport(result.id);
+}
+
+async function deleteCurrentReport() {
+  if (!currentReportId || !confirm("Delete this report?")) return;
+  await API.delete(`/api/reports/${currentReportId}`);
+  currentReportId = null;
+  document.getElementById("report-viewer-title").textContent = "Select a report to view";
+  document.getElementById("delete-report-btn").style.display = "none";
+  document.getElementById("report-viewer").innerHTML = `<div class="empty-state"><div class="icon">📄</div><p>Select a report from the list.</p></div>`;
+  loadReports();
+  showAlert("Report deleted.");
+}
+
+loadReports();
+</script>
+{% endblock %}

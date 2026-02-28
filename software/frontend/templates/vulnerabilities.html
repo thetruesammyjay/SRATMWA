@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top-bar">
+  <h2>🔍 Vulnerabilities</h2>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="openModal('vuln-modal')">+ New Vulnerability</button>
+  </div>
+</div>
+
+<div class="page-content">
+  <div id="alert-container"></div>
+  <div class="filter-bar">
+    <select id="filter-sev" onchange="loadVulns()">
+      <option value="">All Severities</option>
+      <option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Informational</option>
+    </select>
+    <select id="filter-status" onchange="loadVulns()">
+      <option value="">All Statuses</option>
+      <option>Open</option><option>Mitigated</option><option>Accepted</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Title</th><th>OWASP</th><th>CVE</th><th>CVSS</th><th>Severity</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="vulns-tbody">
+          <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:40px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="vuln-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('vuln-modal')">✕</button>
+    <h3 id="vuln-modal-title">New Vulnerability</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Title *</label><input id="v-title" /></div>
+      <div class="form-group">
+        <label>Severity</label>
+        <select id="v-sev"><option>Critical</option><option>High</option><option selected>Medium</option><option>Low</option><option>Informational</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="v-desc"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>OWASP Category</label><input id="v-owasp" placeholder="e.g. A01:2021" /></div>
+      <div class="form-group"><label>CVE ID</label><input id="v-cve" placeholder="e.g. CVE-2023-XXXX" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>CVSS Score (0–10)</label><input id="v-cvss" type="number" min="0" max="10" step="0.1" value="5.0" /></div>
+      <div class="form-group"><label>CVSS Vector</label><input id="v-vector" placeholder="AV:N/AC:L/…" /></div>
+    </div>
+    <div class="form-group"><label>Affected Component</label><input id="v-comp" /></div>
+    <div class="form-group"><label>Proof of Concept</label><textarea id="v-poc"></textarea></div>
+    <div class="form-group"><label>Remediation</label><textarea id="v-rem"></textarea></div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="v-status"><option>Open</option><option>Mitigated</option><option>Accepted</option></select>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('vuln-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVuln()">Save</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let editVulnId = null;
+
+async function loadVulns() {
+  const sev = document.getElementById("filter-sev").value;
+  const st  = document.getElementById("filter-status").value;
+  let url = "/api/vulnerabilities/?";
+  if (sev) url += `severity=${encodeURIComponent(sev)}&`;
+  if (st)  url += `status=${encodeURIComponent(st)}`;
+  const vulns = await API.get(url);
+  const tbody = document.getElementById("vulns-tbody");
+  if (!vulns.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🔍</div><p>No vulnerabilities recorded yet.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = vulns.map(v => `
+    <tr>
+      <td><code style="font-size:11px;color:var(--text-muted)">${v.vuln_id}</code></td>
+      <td>${v.title}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${v.owasp_category || '—'}</td>
+      <td style="font-size:12px">${v.cve_id || '—'}</td>
+      <td style="font-weight:700">${v.cvss_score}</td>
+      <td>${severityBadge(v.severity)}</td>
+      <td>${statusBadge(v.status)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick='editVuln(${JSON.stringify(v)})'>Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteVuln(${v.id})">Del</button>
+      </td>
+    </tr>`).join("");
+}
+
+function editVuln(v) {
+  editVulnId = v.id;
+  document.getElementById("vuln-modal-title").textContent = "Edit Vulnerability";
+  document.getElementById("v-title").value  = v.title;
+  document.getElementById("v-sev").value    = v.severity;
+  document.getElementById("v-desc").value   = v.description || "";
+  document.getElementById("v-owasp").value  = v.owasp_category || "";
+  document.getElementById("v-cve").value    = v.cve_id || "";
+  document.getElementById("v-cvss").value   = v.cvss_score;
+  document.getElementById("v-vector").value = v.cvss_vector || "";
+  document.getElementById("v-comp").value   = v.affected_component || "";
+  document.getElementById("v-poc").value    = v.proof_of_concept || "";
+  document.getElementById("v-rem").value    = v.remediation || "";
+  document.getElementById("v-status").value = v.status;
+  openModal("vuln-modal");
+}
+
+async function saveVuln() {
+  const payload = {
+    title: document.getElementById("v-title").value.trim(),
+    severity: document.getElementById("v-sev").value,
+    description: document.getElementById("v-desc").value,
+    owasp_category: document.getElementById("v-owasp").value,
+    cve_id: document.getElementById("v-cve").value,
+    cvss_score: parseFloat(document.getElementById("v-cvss").value),
+    cvss_vector: document.getElementById("v-vector").value,
+    affected_component: document.getElementById("v-comp").value,
+    proof_of_concept: document.getElementById("v-poc").value,
+    remediation: document.getElementById("v-rem").value,
+    status: document.getElementById("v-status").value,
+  };
+  if (!payload.title) return showAlert("Title is required.", "error");
+  const result = editVulnId
+    ? await API.put(`/api/vulnerabilities/${editVulnId}`, payload)
+    : await API.post("/api/vulnerabilities/", payload);
+  if (result.error) return showAlert(result.error, "error");
+  closeModal("vuln-modal");
+  editVulnId = null;
+  document.getElementById("vuln-modal-title").textContent = "New Vulnerability";
+  loadVulns();
+  showAlert("Vulnerability saved.");
+}
+
+async function deleteVuln(id) {
+  if (!confirm("Delete this vulnerability?")) return;
+  await API.delete(`/api/vulnerabilities/${id}`);
+  loadVulns();
+  showAlert("Vulnerability deleted.");
+}
+
+loadVulns();
+</script>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top-bar">
+  <h2>⚔️ Threat Models</h2>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="openModal('threat-modal')">+ New Threat</button>
+  </div>
+</div>
+
+<div class="page-content">
+  <div id="alert-container"></div>
+
+  <div class="filter-bar">
+    <select id="filter-stride" onchange="loadThreats()">
+      <option value="">All STRIDE Categories</option>
+      <option>Spoofing</option>
+      <option>Tampering</option>
+      <option>Repudiation</option>
+      <option>Information Disclosure</option>
+      <option>Denial of Service</option>
+      <option>Elevation of Privilege</option>
+    </select>
+    <select id="filter-status" onchange="loadThreats()">
+      <option value="">All Statuses</option>
+      <option>Open</option>
+      <option>Mitigated</option>
+      <option>Accepted</option>
+      <option>Transferred</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Title</th><th>STRIDE</th><th>DREAD</th>
+            <th>Entry Point</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="threats-tbody">
+          <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Threat Modal -->
+<div class="modal-overlay" id="threat-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('threat-modal')">✕</button>
+    <h3 id="modal-title">New Threat</h3>
+    <input type="hidden" id="edit-id" />
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Title *</label>
+        <input id="f-title" placeholder="e.g. JWT Token Forgery" />
+      </div>
+      <div class="form-group">
+        <label>STRIDE Category *</label>
+        <select id="f-stride">
+          <option>Spoofing</option>
+          <option>Tampering</option>
+          <option>Repudiation</option>
+          <option>Information Disclosure</option>
+          <option>Denial of Service</option>
+          <option>Elevation of Privilege</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="f-desc" placeholder="Describe the threat scenario…"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Entry Point</label>
+        <input id="f-entry" placeholder="e.g. /api/auth/login" />
+      </div>
+      <div class="form-group">
+        <label>Attack Vector</label>
+        <select id="f-vector">
+          <option>Network</option><option>Adjacent</option>
+          <option>Local</option><option>Physical</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Component (for ID)</label>
+        <input id="f-component" placeholder="e.g. AUTH" maxlength="4" />
+      </div>
+      <div class="form-group">
+        <label>PASTA Stage (1–7)</label>
+        <select id="f-pasta">
+          <option value="1">1 – Define Business Objectives</option>
+          <option value="2">2 – Define Technical Scope</option>
+          <option value="3">3 – Decompose Application</option>
+          <option value="4">4 – Threat Analysis</option>
+          <option value="5">5 – Vulnerability Analysis</option>
+          <option value="6">6 – Attack Modeling</option>
+          <option value="7">7 – Risk/Impact Analysis</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:8px;">DREAD Scores (1–10)</label>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+        <div class="form-group"><label>Damage</label><input id="f-d1" type="number" min="1" max="10" value="5" /></div>
+        <div class="form-group"><label>Reprod.</label><input id="f-d2" type="number" min="1" max="10" value="5" /></div>
+        <div class="form-group"><label>Exploit.</label><input id="f-d3" type="number" min="1" max="10" value="5" /></div>
+        <div class="form-group"><label>Users</label><input id="f-d4" type="number" min="1" max="10" value="5" /></div>
+        <div class="form-group"><label>Discov.</label><input id="f-d5" type="number" min="1" max="10" value="5" /></div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Mitigations</label>
+      <textarea id="f-mit" placeholder="Recommended mitigations…"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f-status">
+          <option>Open</option><option>Mitigated</option>
+          <option>Accepted</option><option>Transferred</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('threat-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveThreat()">Save Threat</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let editingId = null;
+
+async function loadThreats() {
+  const stride = document.getElementById("filter-stride").value;
+  const status = document.getElementById("filter-status").value;
+  let url = "/api/threats/?";
+  if (stride) url += `stride=${encodeURIComponent(stride)}&`;
+  if (status) url += `status=${encodeURIComponent(status)}`;
+  const threats = await API.get(url);
+  const tbody = document.getElementById("threats-tbody");
+  if (!threats.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">⚔️</div><p>No threats recorded yet. Add your first threat.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = threats.map(t => `
+    <tr>
+      <td><code style="font-size:11px;color:var(--text-muted)">${t.threat_id}</code></td>
+      <td>${t.title}</td>
+      <td><span class="badge badge-info">${t.stride_category}</span></td>
+      <td>
+        <div class="dread-bar">
+          <span class="score-val">${t.dread.score}</span>
+          <div class="bar-wrap"><div class="bar-fill" style="width:${t.dread.score*10}%"></div></div>
+        </div>
+      </td>
+      <td style="color:var(--text-muted);font-size:12px">${t.entry_point || '—'}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick='editThreat(${JSON.stringify(t)})'>Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteThreat(${t.id})">Del</button>
+      </td>
+    </tr>`).join("");
+}
+
+function editThreat(t) {
+  editingId = t.id;
+  document.getElementById("modal-title").textContent = "Edit Threat";
+  document.getElementById("f-title").value = t.title;
+  document.getElementById("f-stride").value = t.stride_category;
+  document.getElementById("f-desc").value = t.description || "";
+  document.getElementById("f-entry").value = t.entry_point || "";
+  document.getElementById("f-vector").value = t.attack_vector || "Network";
+  document.getElementById("f-pasta").value = t.pasta_stage;
+  document.getElementById("f-d1").value = t.dread.damage;
+  document.getElementById("f-d2").value = t.dread.reproducibility;
+  document.getElementById("f-d3").value = t.dread.exploitability;
+  document.getElementById("f-d4").value = t.dread.affected_users;
+  document.getElementById("f-d5").value = t.dread.discoverability;
+  document.getElementById("f-mit").value = t.mitigations || "";
+  document.getElementById("f-status").value = t.status;
+  openModal("threat-modal");
+}
+
+async function saveThreat() {
+  const payload = {
+    title: document.getElementById("f-title").value.trim(),
+    stride_category: document.getElementById("f-stride").value,
+    description: document.getElementById("f-desc").value,
+    entry_point: document.getElementById("f-entry").value,
+    attack_vector: document.getElementById("f-vector").value,
+    component: document.getElementById("f-component").value || "GEN",
+    pasta_stage: parseInt(document.getElementById("f-pasta").value),
+    dread_damage: parseInt(document.getElementById("f-d1").value),
+    dread_reproducibility: parseInt(document.getElementById("f-d2").value),
+    dread_exploitability: parseInt(document.getElementById("f-d3").value),
+    dread_affected_users: parseInt(document.getElementById("f-d4").value),
+    dread_discoverability: parseInt(document.getElementById("f-d5").value),
+    mitigations: document.getElementById("f-mit").value,
+    status: document.getElementById("f-status").value,
+  };
+  if (!payload.title) return showAlert("Title is required.", "error");
+  let result;
+  if (editingId) {
+    result = await API.put(`/api/threats/${editingId}`, payload);
+  } else {
+    result = await API.post("/api/threats/", payload);
+  }
+  if (result.error) return showAlert(result.error, "error");
+  closeModal("threat-modal");
+  editingId = null;
+  document.getElementById("modal-title").textContent = "New Threat";
+  loadThreats();
+  showAlert("Threat saved successfully.");
+}
+
+async function deleteThreat(id) {
+  if (!confirm("Delete this threat?")) return;
+  await API.delete(`/api/threats/${id}`);
+  loadThreats();
+  showAlert("Threat deleted.");
+}
+
+loadThreats();
+</script>
+{% endblock %}
