@@ -17,26 +17,32 @@ A web application that operationalises the Security Risk Assessment and Threat M
 
 ## Quick Start
 
-### 1. Set up Python environment
+> **Requires [uv](https://docs.astral.sh/uv/getting-started/installation/).**
+
+### 1. Install dependencies
 
 ```bash
 cd software
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-pip install -r requirements.txt
+uv sync
 ```
+
+`uv sync` creates an isolated virtual environment and installs all
+dependencies declared in `pyproject.toml` automatically — no manual
+`venv` or `pip install` needed.
 
 ### 2. Initialise and seed the database
 
 ```bash
-python seed.py
+uv run init
 ```
+
+Creates all tables and populates them with starter assets, threats,
+vulnerabilities, risks, controls, and checklist items.
 
 ### 3. Run the development server
 
 ```bash
-python run.py
+uv run dev
 ```
 
 Open **http://127.0.0.1:5000** in your browser.

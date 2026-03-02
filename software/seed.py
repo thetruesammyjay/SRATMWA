@@ -1,13 +1,12 @@
 """
 seed.py — Populate the database with starter data for SRATMWA.
 
-Run: python seed.py
+Run: python seed.py   (direct)
+     uv run init      (via project script)
 """
 
 from app import create_app, db
 from app.models import Asset, Threat, Vulnerability, RiskEntry, Control, ChecklistItem
-
-app = create_app()
 
 ASSETS = [
     {"name": "Browser Client", "layer": "Client Layer", "description": "End-user web browser interface."},
@@ -278,6 +277,7 @@ RISKS = [
 
 
 def seed():
+    app = create_app()
     with app.app_context():
         db.create_all()
 
